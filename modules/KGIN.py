@@ -38,27 +38,22 @@ class Aggregator(nn.Module):
 
         """KG aggregate"""
         head, tail = edge_index
-        #gc.collect()
-        #torch.cuda.empty_cache()
-        #print(edge_type.shape)
+        
         edge_relation_emb = weight[edge_type - 1]  # exclude interact, remap [1, n_relations) to [0, n_relations-1)\
-        #print(edge_relation_emb.shape)
-        #print(entity_emb[tail].shape)
+        
         
         neigh_relation_emb = entity_emb[tail] * edge_relation_emb  # [-1, channel]
-        #print(neigh_relation_emb.shape)
+        
         entity_agg = scatter_mean(src=neigh_relation_emb, index=head, dim_size=n_entities, dim=0)
-        #print(entity_agg.shape)
+        
 
         """cul user->latent factor attention"""
         score_1 = torch.mm(user_emb, latent_emb.t())
-        #print(latent_emb.shape,len(user_emb))
+        
         score1 = nn.Softmax(dim=1)(score_1).unsqueeze(-1)  # [n_users, n_factors, 1]
         score_2 = torch.mm(entity_emb[n_users:n_users+n_items,], latent_emb.t())
         score2 = nn.Softmax(dim=1)(score_2).unsqueeze(-1)  # [n_users, n_factors, 1]
-        #print(score.shape)
-        #print(user_agg)
-        #print(interact_mat_user)
+        
         """user aggregate"""
         user_agg = torch.sparse.mm(interact_mat_user, entity_emb)  
         item_agg = torch.sparse.mm(interact_mat_item, entity_emb)# [n_users, channel]
@@ -66,16 +61,14 @@ class Aggregator(nn.Module):
                                 weight).expand(n_users, n_factors, channel)
         disen_weight2 = torch.mm(nn.Softmax(dim=-1)(disen_weight_att),
                                 weight).expand(n_items, n_factors, channel)
-        #print(disen_weight.shape)
-        #a=disen_weight*score
-        #print(a.shape)
+        
         user_agg = user_agg * (disen_weight1 * score1).sum(dim=1) + user_agg  # [n_users, channel]
         item_agg = item_agg * (disen_weight2 * score2).sum(dim=1) + item_agg  # [n_users, channel]
-        #print(user_agg[596])
-        #user_agg=entity_agg[:n_users,]+user_agg
-        user_agg = torch.sparse.mm(interact_mat_user, entity_emb)
-        #entity_agg[n_users:n_users+n_items,]=item_agg+entity_agg[n_users:n_users+n_items,]
-        #entity_agg[n_users:n_users+n_items,]=torch.sparse.mm(interact_mat_item, entity_emb)
+
+        user_agg=entity_agg[:n_users,]+user_agg
+        
+        entity_agg[n_users:n_users+n_items,]=item_agg+entity_agg[n_users:n_users+n_items,]
+        
         return entity_agg, user_agg
 
 
@@ -136,21 +129,7 @@ class GraphConv(nn.Module):
         out = torch.sparse.FloatTensor(i, v, x.shape).to(x.device)
         return out * (1. / (1 - rate))
 
-    # def _cul_cor_pro(self):
-    #     # disen_T: [num_factor, dimension]
-    #     disen_T = self.disen_weight_att.t()
-    #
-    #     # normalized_disen_T: [num_factor, dimension]
-    #     normalized_disen_T = disen_T / disen_T.norm(dim=1, keepdim=True)
-    #
-    #     pos_scores = torch.sum(normalized_disen_T * normalized_disen_T, dim=1)
-    #     ttl_scores = torch.sum(torch.mm(disen_T, self.disen_weight_att), dim=1)
-    #
-    #     pos_scores = torch.exp(pos_scores / self.temperature)
-    #     ttl_scores = torch.exp(ttl_scores / self.temperature)
-    #
-    #     mi_score = - torch.sum(torch.log(pos_scores / ttl_scores))
-    #     return mi_score
+    
 
     def _cul_cor(self):
         def DistanceCorrelation(tensor_1, tensor_2):
@@ -199,7 +178,7 @@ class GraphConv(nn.Module):
         entity_res_emb = entity_emb  # [n_entity, channel]
         user_res_emb = user_emb  # [n_users, channel]
         cor = self._cul_cor()
-        #print(edge_index.shape,edge_type.shape)
+        
         for i in range(len(self.convs)):
             entity_emb, user_emb= self.convs[i](entity_emb, user_emb, latent_emb,
                                                  edge_index, edge_type, interact_mat_user,interact_mat_item,
