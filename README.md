@@ -1,2 +1,2 @@
 # DTKGIN
-Predict drug-target interaction via knowledge graph and intent graph
+Predict drug-target interactions based on knowledge graph and intent graph
