@@ -48,10 +48,10 @@ def read_cf1(file_name):
 
 def remap_item(train_data, test_data):
     global n_users, n_items
-    n_users = 709
-    n_items = 1512
-    #n_users = 791
-    #n_items = 989
+    #n_users = 709
+    #n_items = 1512
+    n_users = 791
+    n_items = 989
 
     for u_id, i_id in train_data:
         train_user_set[int(u_id)].append(int(i_id))
@@ -89,14 +89,10 @@ def read_triplets(file_name):
         can_triplets_np[:, 1] = can_triplets_np[:, 1] + 1
         triplets = can_triplets_np.copy()
     #print(triplets)
-    n_entities = max(max(triplets[:, 0]), max(triplets[:, 2])) + 1  # including items + users
-    n_nodes = n_entities=12015
-    #n_nodes = n_entities=25487
+
+    #n_nodes = n_entities=12015
+    n_nodes = n_entities=25487
     n_relations = max(triplets[:, 1]) + 1
-    #print(n_relations)
-    #print(n_entities)
-    #assert n_entities==95160
-    #assert n_relations==48
 
     return triplets
 
@@ -160,13 +156,7 @@ def build_sparse_relational_graph(relation_dict):
 
     norm_mat_list = [_bi_norm_lap(mat) for mat in adj_mat_list]
     mean_mat_list = [_si_norm_lap(mat) for mat in adj_mat_list]
-    # interaction: user->item, [n_users, n_entities]
-    #print(norm_mat_list[0])
-    #norm_mat_list[0] = norm_mat_list[0].tocsr()[:n_users, :].tocoo()
-    #print(norm_mat_list[0])
-    #print(norm_mat_list[0].shape)
-    #mean_mat_list[0] = mean_mat_list[0].tocsr()[:n_users, :].tocoo()
-    #print(mean_mat_list[0].nnz)
+
 
     return adj_mat_list, norm_mat_list, mean_mat_list
 
@@ -180,18 +170,14 @@ def load_data(model_args,i):
     print('reading train and test user-item set ...')
     train_cf,trainneg_cf = read_cf(directory + 'train_fold_'+str(i)+'.txt')
     test_cf,testneg_cf = read_cf(directory + 'test_fold_'+str(i)+'.txt')
-    #print(train_cf)
-    #train_cf = read_cf1(directory + 'trainpos1.txt')
-    #test_cf = read_cf1(directory + 'testpos1.txt')
-    #trainneg_cf = read_cf1(directory + 'trainneg1.txt')
-    #testneg_cf = read_cf1(directory + 'testneg1.txt')
+    
     print(len(train_cf),len(trainneg_cf),len(test_cf),len(testneg_cf))
     
     remap_item(train_cf, test_cf)
     remap_item2(trainneg_cf, testneg_cf)
-    #print(len(testneg_user_set.keys()))
+    
     print('combinating train_cf and kg data ...')
-    triplets = read_triplets("data/luo/kg_final.txt")
+    triplets = read_triplets("data/Y08/kg_final.txt")
     #triplets = read_triplets("data/luodataset/kg_final.txt")
     #print(len(triplets))
     print('building the graph ...')
@@ -214,20 +200,6 @@ def load_data(model_args,i):
         'trainneg_user_set': trainneg_user_set,
         'testneg_user_set': testneg_user_set,
     }
-    print(len(test_user_set.keys()))
-    print(len(testneg_user_set.keys()))
-    print(len(train_user_set.keys()))
-    print(len(trainneg_user_set.keys()))
-    a=list(train_user_set.keys())
-    a.sort()
-    b=list(trainneg_user_set.keys())
-    b.sort()
-    print(a==b)
-    a=list(test_user_set.keys())
-    a.sort()
-    b=list(testneg_user_set.keys())
-    b.sort()
-    print(a==b)
     #print(len(train_user_set.keys()),len(test_user_set.keys()),len(trainneg_user_set.keys()),len(testneg_user_set.keys()))
     return directory,train_cf,test_cf,trainneg_cf,testneg_cf, user_dict, n_params, graph, \
            [adj_mat_list, norm_mat_list, mean_mat_list]

@@ -5,7 +5,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description="KGIN")
 
     # ===== dataset ===== #
-    parser.add_argument("--dataset", nargs="?", default="luo/warm_start_1_10", help="Choose a dataset:[Y08,luodatatset]")
+    parser.add_argument("--dataset", nargs="?", default="Y08/warm_start_1_10", help="Choose a dataset:[Y08,luodatatset]")
     parser.add_argument(
         "--data_path", nargs="?", default="data/", help="Input data path."
     )
